@@ -69,6 +69,57 @@ function addArea() {
     saveDraft();
     renderEditor();
 }
+function fitParkingView() {
+    if (!activeLayout.length) return;
+
+    let minX = Infinity, minY = Infinity;
+    let maxX = -Infinity, maxY = -Infinity;
+
+    activeLayout.forEach(o => {
+        minX = Math.min(minX, o.x);
+        minY = Math.min(minY, o.y);
+
+        if (o.type === "area") {
+            const w = o.cols * 30;
+            const h = o.rows * 42;
+            maxX = Math.max(maxX, o.x + w);
+            maxY = Math.max(maxY, o.y + h);
+        } else {
+            maxX = Math.max(maxX, o.x + o.w);
+            maxY = Math.max(maxY, o.y + o.h);
+        }
+    });
+
+    const mapW = maxX - minX;
+    const mapH = maxY - minY;
+
+    const canvas = parkingCanvas;
+    const rect = canvas.getBoundingClientRect();
+
+    const tabbar = document.querySelector('.tabbar');
+    const tabbarH = tabbar ? tabbar.offsetHeight : 0;
+
+    const padding = 40;
+
+    const usableW = rect.width  - padding * 2;
+    const usableH = rect.height - tabbarH - padding * 2;
+
+    const scaleX = usableW / mapW;
+    const scaleY = usableH / mapH;
+    const scale  = Math.min(scaleX, scaleY, 3);
+
+    const state = viewState.parking;
+    state.scale = scale;
+
+    state.x =
+        rect.width / 2 - (minX + mapW / 2) * scale;
+    state.y =
+        (usableH / 2) - (minY + mapH / 2) * scale;
+
+    parkingInner.style.transform =
+        `translate(${state.x}px, ${state.y}px) scale(${state.scale})`;
+}
+
 
 function addRoad() {
     draftLayout.push({
@@ -107,6 +158,9 @@ function acceptLayout() {
  ***********************/
 function renderEditor() {
     editorInner.innerHTML = "";
+
+    renderEditorAxis(); 
+
     draftLayout.forEach(o => {
         const el = o.type === "area"
             ? renderArea(o, true)
@@ -116,10 +170,10 @@ function renderEditor() {
             e.stopPropagation();
             select(o, el);
         };
-
         editorInner.appendChild(el);
     });
 }
+
 
 /***********************
  * PARKING RENDER
@@ -276,6 +330,34 @@ function enableZoom(canvas, inner, key) {
             `translate(${state.x}px,${state.y}px) scale(${state.scale})`;
     });
 }
+function renderEditorAxis() {
+    // xóa axis cũ nếu có
+    editorInner.querySelectorAll(".axis-x,.axis-y,.axis-origin")
+        .forEach(e => e.remove());
+
+    const ox = 0;
+    const oy = 0;
+
+    const axisX = document.createElement("div");
+    axisX.className = "axis-x";
+    axisX.style.left = ox + "px";
+    axisX.style.top  = oy + "px";
+
+    const axisY = document.createElement("div");
+    axisY.className = "axis-y";
+    axisY.style.left = ox + "px";
+    axisY.style.top  = oy + "px";
+
+    const label = document.createElement("div");
+    label.className = "axis-origin";
+    label.style.left = ox + "px";
+    label.style.top  = oy + "px";
+    label.innerText = "(0,0)";
+
+    editorInner.appendChild(axisX);
+    editorInner.appendChild(axisY);
+    editorInner.appendChild(label);
+}
 
 /***********************
  * PAN
@@ -337,4 +419,5 @@ document.addEventListener("contextmenu", e => e.preventDefault());
 /***********************
  * INIT
  ***********************/
-renderEditor();
+showSection("parking");
+
