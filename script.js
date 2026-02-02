@@ -1,3 +1,6 @@
+/***********************
+ * GLOBAL STATE
+ ***********************/
 let draftLayout = [];
 let activeLayout = [];
 let selected = null;
@@ -7,77 +10,150 @@ const viewState = {
     parking: { scale: 1, x: 0, y: 0 }
 };
 
-/* NAV */
-function showSection(id) {
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-    if (id === "settings") renderEditor();
-    if (id === "parking") renderParking();
+/***********************
+ * STORAGE
+ ***********************/
+function saveDraft() {
+    localStorage.setItem(
+        "parking_draftLayout",
+        JSON.stringify(draftLayout)
+    );
 }
 
-/* ADD */
+function saveActive() {
+    localStorage.setItem(
+        "parking_activeLayout",
+        JSON.stringify(activeLayout)
+    );
+}
+
+function loadFromStorage() {
+    const draft  = localStorage.getItem("parking_draftLayout");
+    const active = localStorage.getItem("parking_activeLayout");
+
+    if (draft) {
+        try { draftLayout = JSON.parse(draft); } catch {}
+    }
+    if (active) {
+        try { activeLayout = JSON.parse(active); } catch {}
+    }
+}
+
+loadFromStorage();
+
+/***********************
+ * NAVIGATION
+ ***********************/
+function showSection(id) {
+    document.querySelectorAll(".section")
+        .forEach(s => s.classList.remove("active"));
+
+    document.getElementById(id).classList.add("active");
+
+    if (id === "settings") renderEditor();
+    if (id === "parking")  renderParking();
+}
+
+/***********************
+ * ADD
+ ***********************/
 function addArea() {
     draftLayout.push({
         type: "area",
         name: areaName.value || "A",
         rows: +areaRows.value,
         cols: +areaCols.value,
-        x: 40, y: 40
+        x: 40,
+        y: 40
     });
+    saveDraft();
     renderEditor();
 }
 
 function addRoad() {
-    draftLayout.push({ type: "road", x: 120, y: 300, w: 320, h: 50 });
+    draftLayout.push({
+        type: "road",
+        x: 120,
+        y: 300,
+        w: 320,
+        h: 50
+    });
+    saveDraft();
     renderEditor();
 }
 
-/* DELETE */
+/***********************
+ * DELETE
+ ***********************/
 function deleteSelected() {
     if (!selected) return;
     draftLayout = draftLayout.filter(o => o !== selected);
     selected = null;
+    saveDraft();
     renderEditor();
 }
 
-/* ACCEPT */
+/***********************
+ * ACCEPT
+ ***********************/
 function acceptLayout() {
     activeLayout = JSON.parse(JSON.stringify(draftLayout));
-    alert("Đã áp dụng sơ đồ");
+    saveActive();
+    alert("Đã áp dụng & lưu sơ đồ");
 }
 
-/* EDITOR */
+/***********************
+ * EDITOR RENDER
+ ***********************/
 function renderEditor() {
     editorInner.innerHTML = "";
     draftLayout.forEach(o => {
-        const el = o.type === "area" ? renderArea(o, true) : renderRoad(o, true);
-        el.onclick = e => { e.stopPropagation(); select(o, el); };
+        const el = o.type === "area"
+            ? renderArea(o, true)
+            : renderRoad(o, true);
+
+        el.onclick = e => {
+            e.stopPropagation();
+            select(o, el);
+        };
+
         editorInner.appendChild(el);
     });
 }
 
-/* PARKING */
+/***********************
+ * PARKING RENDER
+ ***********************/
 function renderParking() {
     parkingInner.innerHTML = "";
     activeLayout.forEach(o => {
-        parkingInner.appendChild(o.type === "area" ? renderArea(o, false) : renderRoad(o, false));
+        parkingInner.appendChild(
+            o.type === "area"
+                ? renderArea(o, false)
+                : renderRoad(o, false)
+        );
     });
     mockMQTT();
 }
 
-/* SELECT */
+/***********************
+ * SELECT
+ ***********************/
 function select(o, el) {
     selected = o;
-    document.querySelectorAll(".selected").forEach(e => e.classList.remove("selected"));
+    document.querySelectorAll(".selected")
+        .forEach(e => e.classList.remove("selected"));
     el.classList.add("selected");
 }
 
-/* AREA */
+/***********************
+ * AREA
+ ***********************/
 function renderArea(o, edit) {
     const el = document.createElement("div");
     el.className = "area";
     el.style.left = o.x + "px";
-    el.style.top = o.y + "px";
+    el.style.top  = o.y + "px";
     el.innerHTML = `<h4>KHU ${o.name}</h4>`;
 
     const g = document.createElement("div");
@@ -95,45 +171,63 @@ function renderArea(o, edit) {
     return el;
 }
 
-/* ROAD */
+/***********************
+ * ROAD
+ ***********************/
 function renderRoad(o, edit) {
     const el = document.createElement("div");
     el.className = "road";
     Object.assign(el.style, {
-        left: o.x + "px",
-        top: o.y + "px",
-        width: o.w + "px",
+        left:   o.x + "px",
+        top:    o.y + "px",
+        width:  o.w + "px",
         height: o.h + "px"
     });
 
     if (edit) {
         drag(el, o);
+
         const r = document.createElement("div");
         r.className = "resize";
         r.onmousedown = e => {
             e.stopPropagation();
+
             document.onmousemove = ev => {
-                o.w = Math.max(60, (ev.clientX - el.getBoundingClientRect().left) / viewState.editor.scale);
-                o.h = Math.max(30, (ev.clientY - el.getBoundingClientRect().top) / viewState.editor.scale);
-                el.style.width = o.w + "px";
+                o.w = Math.max(
+                    60,
+                    (ev.clientX - el.getBoundingClientRect().left)
+                    / viewState.editor.scale
+                );
+                o.h = Math.max(
+                    30,
+                    (ev.clientY - el.getBoundingClientRect().top)
+                    / viewState.editor.scale
+                );
+                el.style.width  = o.w + "px";
                 el.style.height = o.h + "px";
             };
-            document.onmouseup = () => document.onmousemove = null;
+
+            document.onmouseup = () => {
+                document.onmousemove = null;
+                saveDraft();
+            };
         };
         el.appendChild(r);
     }
     return el;
 }
 
-/* DRAG – WORLD SPACE (KHÔNG TRƯỢT) */
+/***********************
+ * DRAG (WORLD SPACE)
+ ***********************/
 function drag(el, o) {
     el.onmousedown = e => {
-        if (e.button !== 0) return; // chỉ chuột trái
+        if (e.button !== 0) return;
         e.preventDefault();
 
         const canvas = el.closest(".editor-canvas");
-        const state = viewState.editor;
-        const rect = canvas.getBoundingClientRect();
+        const state  = viewState.editor;
+        const rect   = canvas.getBoundingClientRect();
 
         const startX = (e.clientX - rect.left - state.x) / state.scale;
         const startY = (e.clientY - rect.top  - state.y) / state.scale;
@@ -147,11 +241,17 @@ function drag(el, o) {
             el.style.left = o.x + "px";
             el.style.top  = o.y + "px";
         };
-        document.onmouseup = () => document.onmousemove = null;
+
+        document.onmouseup = () => {
+            document.onmousemove = null;
+            saveDraft();
+        };
     };
 }
 
-/* ZOOM – THEO TÂM CHUỘT */
+/***********************
+ * ZOOM
+ ***********************/
 function enableZoom(canvas, inner, key) {
     const state = viewState[key];
 
@@ -177,34 +277,28 @@ function enableZoom(canvas, inner, key) {
     });
 }
 
-/* PAN – GIỮ CHUỘT GIỮA */
+/***********************
+ * PAN
+ ***********************/
 function enablePan(canvas, inner, key) {
     const state = viewState[key];
     let panning = false;
-    let startX = 0, startY = 0;
+    let sx = 0, sy = 0;
 
     canvas.addEventListener("mousedown", e => {
-        // chỉ chuột trái
         if (e.button !== 0) return;
-
-        // nếu bấm trúng object thì KHÔNG pan
         if (e.target.closest(".area") || e.target.closest(".road")) return;
 
-        e.preventDefault();
-
         panning = true;
-        startX = e.clientX - state.x;
-        startY = e.clientY - state.y;
-
+        sx = e.clientX - state.x;
+        sy = e.clientY - state.y;
         canvas.style.cursor = "grabbing";
     });
 
     document.addEventListener("mousemove", e => {
         if (!panning) return;
-
-        state.x = e.clientX - startX;
-        state.y = e.clientY - startY;
-
+        state.x = e.clientX - sx;
+        state.y = e.clientY - sy;
         inner.style.transform =
             `translate(${state.x}px,${state.y}px) scale(${state.scale})`;
     });
@@ -216,21 +310,31 @@ function enablePan(canvas, inner, key) {
     });
 }
 
-
-/* ENABLE */
+/***********************
+ * ENABLE
+ ***********************/
 enableZoom(editorCanvas, editorInner, "editor");
 enableZoom(parkingCanvas, parkingInner, "parking");
-
 enablePan(editorCanvas, editorInner, "editor");
 enablePan(parkingCanvas, parkingInner, "parking");
 
-/* MOCK MQTT */
+/***********************
+ * MOCK MQTT
+ ***********************/
 function mockMQTT() {
     document.querySelectorAll(".slot").forEach(s => {
         const r = Math.random();
-        s.className = "slot " + (r < 0.4 ? "free" : r < 0.7 ? "busy" : "nodata");
+        s.className =
+            "slot " + (r < 0.4 ? "free" : r < 0.7 ? "busy" : "nodata");
     });
 }
 
-/* CHẶN MENU CHUỘT PHẢI */
+/***********************
+ * BLOCK RIGHT CLICK
+ ***********************/
 document.addEventListener("contextmenu", e => e.preventDefault());
+
+/***********************
+ * INIT
+ ***********************/
+renderEditor();
