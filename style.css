@@ -1,0 +1,146 @@
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f8fafc;
+}
+
+.container {
+    display: flex;
+    height: 100vh;
+}
+
+/* SIDEBAR */
+.sidebar {
+    width: 200px;
+    background: #0f172a;
+    color: white;
+    padding: 15px;
+}
+.sidebar li {
+    list-style: none;
+    padding: 12px;
+    cursor: pointer;
+}
+.sidebar li:hover {
+    background: #1e293b;
+}
+
+/* MAIN */
+.main {
+    flex: 1;
+    padding: 16px;
+}
+
+.section { display: none; }
+.section.active { display: block; }
+
+/* TOOLBAR */
+.toolbar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 10px;
+    align-items: flex-end;
+}
+.tool {
+    background: white;
+    padding: 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+}
+.tool input { width: 70px; }
+
+.accept {
+    background: #22c55e;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    cursor: pointer;
+}
+.danger {
+    background: #ef4444;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    cursor: pointer;
+}
+
+/* CANVAS */
+.editor-canvas,
+.parking-canvas {
+    position: relative;
+    height: 620px;
+    background: #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.canvas-inner {
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform-origin: 0 0;
+}
+
+/* AREA */
+.area {
+    position: absolute;
+    background: #ecfeff;
+    border: 2px solid #06b6d4;
+    border-radius: 6px;
+    padding: 6px;
+}
+.area h4 {
+    margin: 4px 0;
+    font-size: 14px;
+}
+
+.grid {
+    display: grid;
+    gap: 6px;
+}
+
+/* SLOT 2:3 – only border */
+.slot {
+    width: 24px;
+    height: 36px;
+    border: 3px solid;
+    border-radius: 4px;
+    background: transparent;
+    box-sizing: border-box;
+}
+.free   { border-color: #22c55e; }
+.busy   { border-color: #ef4444; }
+.nodata { border-color: #f59e0b; }
+
+/* ROAD */
+.road {
+    position: absolute;
+    border-radius: 6px;
+    background: repeating-linear-gradient(
+        90deg,
+        #475569,
+        #475569 24px,
+        #64748b 24px,
+        #64748b 48px
+    );
+}
+
+.resize {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    right: -8px;
+    bottom: -8px;
+    background: white;
+    border: 2px solid black;
+    cursor: se-resize;
+}
+
+.editor-canvas .area,
+.editor-canvas .road {
+    cursor: move;
+}
+
+.selected {
+    outline: 3px solid #2563eb;
+}

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Parking Manager</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+    <div class="sidebar">
+        <h2>BÃI XE</h2>
+        <ul>
+            <li onclick="showSection('parking')">🚗 Parking Lot</li>
+            <li onclick="showSection('settings')">📐 Resize Map</li>
+        </ul>
+    </div>
+
+    <div class="main">
+
+        <!-- PARKING -->
+        <div id="parking" class="section active">
+            <h1>Parking Lot</h1>
+            <div id="parkingCanvas" class="parking-canvas">
+                <div class="canvas-inner" id="parkingInner"></div>
+            </div>
+        </div>
+
+        <!-- SETTINGS -->
+        <div id="settings" class="section">
+
+            <div class="toolbar">
+                <div class="tool">
+                    <b>Thêm khu</b><br>
+                    <input id="areaName" placeholder="Tên khu">
+                    <input id="areaRows" type="number" value="4" min="1">
+                    <input id="areaCols" type="number" value="4" min="1">
+                    <button onclick="addArea()">➕ Khu</button>
+                </div>
+
+                <div class="tool">
+                    <b>Đường</b><br>
+                    <button onclick="addRoad()">➕ Đường</button>
+                </div>
+
+                <div class="tool">
+                    <button class="danger" onclick="deleteSelected()">🗑 Xóa</button>
+                    <button class="accept" onclick="acceptLayout()">✅ ACCEPT</button>
+                </div>
+            </div>
+
+            <div id="editorCanvas" class="editor-canvas">
+                <div class="canvas-inner" id="editorInner"></div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
