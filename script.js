@@ -701,6 +701,21 @@ function drag(el, o) {
     };
 }
 
+function go(page){
+    window.location.hash = page;
+}
+function loadPage(){
+
+    const hash = window.location.hash.replace("#","");
+
+    if(!hash){
+        showSection("parking");
+        return;
+    }
+
+    showSection(hash);
+}
+window.addEventListener("hashchange", loadPage);
 /***********************
  * ZOOM
  ***********************/
@@ -809,8 +824,7 @@ document.addEventListener("contextmenu", e => e.preventDefault());
 /***********************
  * INIT
  ***********************/
-showSection("parking");
-showSection("parking");
+window.addEventListener("load", loadPage);
 
 
 
