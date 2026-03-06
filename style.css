@@ -171,3 +171,224 @@ body {
     border-radius: 4px;
     pointer-events: none;
 }
+/* UID MANAGER */
+.uid-panel {
+    background: white;
+    padding: 16px;
+    border-radius: 8px;
+    width: 360px;
+    border: 1px solid #cbd5e1;
+}
+
+.uid-panel input {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 12px;
+    font-size: 15px;
+}
+
+.uid-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.uid-status {
+    margin-top: 12px;
+    font-size: 14px;
+}
+.uid-status.ok {
+    color: #16a34a;
+}
+.uid-status.err {
+    color: #dc2626;
+}
+.mqtt-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: bold;
+    padding: 6px 12px;
+    border-radius: 20px;
+    width: fit-content;
+}
+
+.mqtt-status .dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.mqtt-status.online {
+    background: #e6f9ed;
+    color: #1a7f37;
+}
+#mqttStatus {
+    position: fixed;
+    top: 15px;
+    right: 20px;
+    z-index: 99999;
+}
+.mqtt-status.online .dot {
+    background: #1a7f37;
+}
+
+.mqtt-status.reconnecting {
+    background: #fff8e1;
+    color: #b58100;
+}
+
+.mqtt-status.reconnecting .dot {
+    background: #f5a623;
+}
+
+.mqtt-status.offline {
+    background: #fdecea;
+    color: #b42318;
+}
+
+.mqtt-status.offline .dot {
+    background: #d92d20;
+}
+.uid-tables {
+    display: flex;
+    gap: 40px;
+    margin-top: 30px;
+}
+
+.uid-tables table {
+    border-collapse: collapse;
+    min-width: 200px;
+}
+
+.uid-tables td {
+    border: 1px solid #cbd5e1;
+    padding: 6px 10px;
+    cursor: pointer;
+}
+.uid-table-container {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+thead th {
+    position: sticky;
+    top: 0;
+    background: #8ce6e8;
+}
+/* ===== IN/OUT MANAGER ===== */
+
+#inout table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #0748c2;
+    color: #ffffff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+}
+
+#inout thead {
+    background: linear-gradient(90deg, #4e73df, #1cc88a);
+}
+
+#inout thead th {
+    padding: 14px;
+    font-weight: 600;
+    text-align: center;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+}
+
+#inout tbody td {
+    padding: 12px;
+    text-align: center;
+    font-size: 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+#inout tbody tr {
+    transition: 0.2s;
+}
+
+#inout tbody tr:hover {
+    background: rgba(255,255,255,0.05);
+}
+
+/* trạng thái */
+
+.status-in {
+    color: #1cc88a;
+    font-weight: bold;
+}
+
+.status-out {
+    color: #cc2617;
+    font-weight: bold;
+}
+
+.status-none {
+    color: #edeb5f;
+}
+
+/* summary box */
+
+#inoutSummary {
+    background: #4e73df;
+    color: rgb(255, 255, 255);
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-size: 14px;
+}
+.table-wrapper {
+    max-height: 550px;     /* chiều cao tối đa bảng */
+    overflow-y: auto;      /* hiện thanh cuộn dọc */
+    border-radius: 12px;
+}
+
+/* Làm đẹp thanh cuộn (Chrome, Edge) */
+.table-wrapper::-webkit-scrollbar {
+    width: 8px;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb {
+    background: #4e73df;
+    border-radius: 10px;
+}
+
+.table-wrapper::-webkit-scrollbar-track {
+    background: rgba(255,255,255,0.05);
+}
+.uid-layout{
+    display:flex;
+    gap:40px;
+}
+
+.uid-left{
+    width:500px;
+}
+
+.uid-right{
+    flex:1;
+}
+
+.timeout-panel{
+    background:#f5f5f5;
+    padding:20px;
+    border-radius:10px;
+    width:260px;
+}
+
+.timeout-panel input{
+    width:100%;
+    padding:6px;
+    margin-top:8px;
+}
+
+.timeout-panel button{
+    margin-top:12px;
+}

@@ -4,14 +4,21 @@
     <meta charset="UTF-8">
     <title>Parking Manager</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+
 </head>
 <body>
-
+<div id="mqttStatus" class="mqtt-status offline">
+    <span class="dot"></span>
+    <span class="text">MQTT: Disconnected</span>
+</div>
 <div class="container">
     <div class="sidebar">
         <h2>BÃI XE</h2>
         <ul>
             <li onclick="showSection('parking')">🚗 Parking Lot</li>
+            <li onclick="showSection('uid')">🪪 UID Manager</li>
+            <li onclick="showSection('inout')">📊 I/O Manager</li>
             <li onclick="showSection('settings')">📐 Resize Map</li>
         </ul>
     </div>
@@ -31,8 +38,93 @@
                 <div class="canvas-inner" id="parkingInner"></div>
             </div>
         </div>
+        <!-- UID MANAGER -->
+        <div id="uid" class="section">
+            <h1>UID Manager</h1>
+
+            <div class="uid-layout">
+
+                <!-- CỘT TRÁI -->
+                <div class="uid-left">
+
+                    <div class="uid-panel">
+                        <input id="uidInput" placeholder="Nhập UID (ví dụ: fa93521b)">
+
+                        <div class="uid-actions">
+                            <button class="accept" onclick="sendUID('add')">➕ Add UID</button>
+                            <button class="danger" onclick="sendUID('remove')">➖ Remove UID</button>
+                        </div>
+
+                        <div class="uid-actions" style="margin-top:10px">
+                            <button onclick="addAll()">🚀 Add All</button>
+                            <button onclick="removeAll()">💣 Remove All</button>
+                            <button onclick="deleteUID()">Xóa UID</button>
+                        </div>
+
+                        <div id="uidStatus" class="uid-status"></div>
+                    </div>
+
+                    <div class="uid-tables">
+                        <div>
+                            <h3>🟢 Added UIDs</h3>
+                            <div class="uid-table-container">
+                                <table id="addedTable"></table>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h3>🔴 Removed UIDs</h3>
+                            <div class="uid-table-container">
+                                <table id="removedTable"></table>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
 
 
+                <!-- CỘT PHẢI -->
+                <div class="uid-right">
+
+                    <div class="timeout-panel">
+                        <h3>⏱ Timeout Config</h3>
+
+                        <input id="timeoutPark" type="number" placeholder="Timeout Park (ms)">
+                        <input id="timeoutLeft" type="number" placeholder="Timeout Left (ms)">
+
+                        <button onclick="sendTimeout()">📤 Send Timeout</button>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+        <!-- IN/OUT MANAGER -->
+        <div id="inout" class="section">
+            <h1>In / Out Manager</h1>
+
+            <div style="margin-bottom:10px">
+                <button onclick="loadInOut()">🔄 Tải dữ liệu</button>
+                <span id="inoutSummary" style="margin-left:15px;font-weight:bold"></span>
+            </div>
+
+            <!-- THÊM DIV NÀY -->
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>UID</th>
+                            <th>Vị trí</th>
+                            <th>Vào mới nhất</th>
+                            <th>Ra mới nhất</th>
+                            <th>Trạng thái</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inoutTableBody"></tbody>
+                </table>
+            </div>
+
+        </div>
         <!-- SETTINGS -->
         <div id="settings" class="section">
 
@@ -63,7 +155,6 @@
 
     </div>
 </div>
-
 <script src="script.js" defer></script>
 </body>
 </html>

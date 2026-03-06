@@ -1,6 +1,394 @@
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzPpqtxTZyr_bC_DxbJrEMqlp-jQjDwiQt12TXLjsM9rlucGgfRoPabtBh_-IEfo4RL/exec";
+
+async function loadInOut() {
+    try {
+        const res = await fetch(GAS_URL);
+        const logs = await res.json();
+
+        if (!Array.isArray(logs)) {
+            console.error("Dữ liệu không hợp lệ", logs);
+            alert("GAS chưa có dữ liệu hoặc lỗi");
+            return;
+        }
+
+        processLogs(logs);
+
+    } catch (err) {
+        console.error(err);
+        alert("Không tải được dữ liệu");
+    }
+}
+function processLogs(logs) {
+
+    const map = {};
+    const validUIDs = new Set(addedUIDs);
+
+    validUIDs.forEach(uid => {
+        map[uid] = {
+            lastIn: null,
+            lastOut: null,
+            location: "-"
+        };
+    });
+
+    logs.forEach(item => {
+
+        if (!validUIDs.has(item.uid)) return;
+
+        const time = new Date(item.time);
+
+        // ghép area + slot
+        const location = item.area + item.slot;
+
+        if (item.direction === "IN") {
+
+            if (!map[item.uid].lastIn || time > map[item.uid].lastIn) {
+                map[item.uid].lastIn = time;
+                map[item.uid].location = location;   
+            }
+
+        }
+
+        if (item.direction === "OUT") {
+
+            if (!map[item.uid].lastOut || time > map[item.uid].lastOut) {
+                map[item.uid].lastOut = time;
+            }
+
+        }
+
+    });
+
+    renderInOutTable(map);
+}
+function renderInOutTable(map) {
+
+    let insideCount = 0;
+    const tbody = document.getElementById("inoutTableBody");
+    tbody.innerHTML = "";
+
+    for (const uid in map) {
+
+        const { lastIn, lastOut, location } = map[uid];
+
+        let status = "Chưa vào";
+        let statusClass = "status-none";
+
+        if (lastIn && (!lastOut || lastIn > lastOut)) {
+            status = "Đang trong bãi";
+            statusClass = "status-in";
+            insideCount++;
+        } else if (lastOut) {
+            status = "Đã ra";
+            statusClass = "status-out";
+        }
+
+        const tr = document.createElement("tr");
+
+        tr.innerHTML = `
+            <td>${uid}</td>
+            <td>${location}</td>
+            <td>${lastIn ? formatTime(lastIn) : "-"}</td>
+            <td>${lastOut ? formatTime(lastOut) : "-"}</td>
+            <td class="${statusClass}">${status}</td>
+        `;
+
+        tbody.appendChild(tr);
+    }
+
+    document.getElementById("inoutSummary").innerText =
+        "Xe đang trong bãi: " + insideCount;
+}
+function formatTime(date) {
+    return new Date(date).toLocaleString("vi-VN");
+}
+/***********************
+ * MQTT CONFIG
+ ***********************/
+const broker = "wss://347b5cbd61ee4efc8309c3c918b7c3f7.s1.eu.hivemq.cloud:8884/mqtt";
+
+let addedUIDs = JSON.parse(localStorage.getItem("addedUIDs")) || [];
+let removedUIDs = JSON.parse(localStorage.getItem("removedUIDs")) || [];
+
+// document.addEventListener("DOMContentLoaded", () => {
+//     renderTables();
+// });
+
+const options = {
+    username: "RimuruTempest",
+    password: "Dongkaiza2004@",
+    reconnectPeriod: 1000
+};
+
+const mqttClient = mqtt.connect(broker, options);
+
+mqttClient.on("connect", () => {
+    console.log("MQTT Connected");
+    setStatus("online");
+    mqttClient.subscribe("mtt/area");
+});
+
+mqttClient.on("message", (topic, message) => {
+    if (topic === "mtt/area") {
+        try {
+            const packet = JSON.parse(message.toString());
+            applyParkingData(packet);
+        } catch (e) {
+            console.error("JSON parse error", e);
+        }
+    }
+});
+
+function sendUID(action) {
+    const uid = document.getElementById("uidInput").value.trim();
+    if (!uid) return;
+
+    publishUID(uid, action);
+
+    if (action === "add") {
+        if (!addedUIDs.includes(uid))
+            addedUIDs.push(uid);
+
+        removedUIDs = removedUIDs.filter(u => u !== uid);
+    } else {
+        if (!removedUIDs.includes(uid))
+            removedUIDs.push(uid);
+
+        addedUIDs = addedUIDs.filter(u => u !== uid);
+    }
+
+    renderTables();
+    localStorage.setItem("addedUIDs", JSON.stringify(addedUIDs));
+    localStorage.setItem("removedUIDs", JSON.stringify(removedUIDs));
+}
+function publishUID(uid, action) {
+    const packet = {
+        type: "uid",
+        action: action,
+        uid: uid
+    };
+
+    mqttClient.publish("mtt/control", JSON.stringify(packet));
+}
+function saveUIDStorage() {
+    localStorage.setItem("addedUIDs", JSON.stringify(addedUIDs));
+    localStorage.setItem("removedUIDs", JSON.stringify(removedUIDs));
+}
+function addAll() {
+
+    const list = [...addedUIDs];
+
+    let i = 0;
+
+    const interval = setInterval(() => {
+
+        if (i >= list.length) {
+            clearInterval(interval);
+            return;
+        }
+
+        const uid = list[i];
+
+        publishUID(uid, "add");
+
+        i++;
+
+    }, 500);
+}
+
+function removeAll() {
+
+    const list = [...removedUIDs];
+
+    let i = 0;
+
+    const interval = setInterval(() => {
+
+        if (i >= list.length) {
+            clearInterval(interval);
+            return;
+        }
+
+        const uid = list[i];
+
+        publishUID(uid, "remove");
+
+        i++;
+
+    }, 500);
+}
+function deleteUID() {
+
+    const input = document.getElementById("uidInput");
+    if (!input) {
+        console.error("Không tìm thấy uidInput");
+        return;
+    }
+
+    const uid = input.value.trim();
+    if (!uid) {
+        alert("Vui lòng nhập UID");
+        return;
+    }
+
+    const beforeCount =
+        addedUIDs.length + removedUIDs.length;
+
+    // Xóa khỏi cả 2 mảng
+    addedUIDs = addedUIDs.filter(u => u !== uid);
+    removedUIDs = removedUIDs.filter(u => u !== uid);
+
+    const afterCount =
+        addedUIDs.length + removedUIDs.length;
+
+    if (beforeCount === afterCount) {
+        alert("UID không tồn tại");
+        return;
+    }
+
+    saveUIDStorage();
+    renderTables();
+
+    input.value = "";
+}
+function loadUIDStorage() {
+    const savedAdded = localStorage.getItem("addedUIDs");
+    const savedRemoved = localStorage.getItem("removedUIDs");
+
+    addedUIDs = savedAdded ? JSON.parse(savedAdded) : [];
+    removedUIDs = savedRemoved ? JSON.parse(savedRemoved) : [];
+
+    renderTables();
+}
+
+window.onload = function(){
+    loadUIDStorage();
+    loadTimeoutConfig();
+}
+const statusEl = document.getElementById("mqttStatus");
+
+function setStatus(state) {
+
+    const statusEl = document.getElementById("mqttStatus");
+    if (!statusEl) return;
+
+    statusEl.className = "mqtt-status " + state;
+
+    const textEl = statusEl.querySelector(".text");
+    if (!textEl) return;
+
+    if (state === "online") {
+        textEl.innerText = "MQTT: Connected";
+    }
+    else if (state === "reconnecting") {
+        textEl.innerText = "MQTT: Reconnecting...";
+    }
+    else {
+        textEl.innerText = "MQTT: Disconnected";
+    }
+}
+function sendTimeout(){
+
+    const park = document.getElementById("timeoutPark").value;
+    const left = document.getElementById("timeoutLeft").value;
+
+    if(!park || !left){
+        alert("Nhập đủ 2 giá trị timeout");
+        return;
+    }
+
+    const msg = {
+        type: "timeout_config",
+        park_timeout: parseInt(park),
+        left_timeout: parseInt(left)
+    };
+
+    mqttClient.publish("mtt/control", JSON.stringify(msg));
+
+    // lưu vào localStorage
+    localStorage.setItem("timeoutPark", park);
+    localStorage.setItem("timeoutLeft", left);
+
+    console.log("Send timeout:", msg);
+}
+function loadTimeoutConfig(){
+
+    const park = localStorage.getItem("timeoutPark");
+    const left = localStorage.getItem("timeoutLeft");
+
+    if(park){
+        document.getElementById("timeoutPark").value = park;
+    }
+
+    if(left){
+        document.getElementById("timeoutLeft").value = left;
+    }
+}
+function applyParkingData(packet) {
+
+    if (!packet.areas) return;
+
+    for (let areaName in packet.areas) {
+
+        const areaData = packet.areas[areaName];
+        const slots = areaData.slots;
+
+        // tìm đúng khu trong activeLayout
+        const areaObj = activeLayout.find(
+            a => a.type === "area" && a.name === areaName
+        );
+
+        if (!areaObj) continue;
+
+        // lưu trạng thái slot vào object
+        areaObj.slots = slots;
+    }
+
+    renderParking();
+}
+
+function renderTables() {
+    const addedTable = document.getElementById("addedTable");
+    const removedTable = document.getElementById("removedTable");
+
+    addedTable.innerHTML = "";
+    removedTable.innerHTML = "";
+
+    addedUIDs.forEach(uid => {
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
+        cell.innerText = uid;
+        cell.onclick = () => moveToRemoved(uid);
+        row.appendChild(cell);
+        addedTable.appendChild(row);
+    });
+
+    removedUIDs.forEach(uid => {
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
+        cell.innerText = uid;
+        cell.onclick = () => moveToAdded(uid);
+        row.appendChild(cell);
+        removedTable.appendChild(row);
+    });
+}
+function moveToRemoved(uid) {
+    addedUIDs = addedUIDs.filter(u => u !== uid);
+    removedUIDs.push(uid);
+    renderTables();
+    saveUIDStorage();
+}
+
+function moveToAdded(uid) {
+    removedUIDs = removedUIDs.filter(u => u !== uid);
+    addedUIDs.push(uid);
+    renderTables();
+    saveUIDStorage();
+}
 /***********************
  * GLOBAL STATE
  ***********************/
+
 let draftLayout = [];
 let activeLayout = [];
 let selected = null;
@@ -187,7 +575,7 @@ function renderParking() {
                 : renderRoad(o, false)
         );
     });
-    mockMQTT();
+    //fetchParkingState();
 }
 
 /***********************
@@ -216,7 +604,17 @@ function renderArea(o, edit) {
 
     for (let i = 0; i < o.rows * o.cols; i++) {
         const s = document.createElement("div");
-        s.className = "slot nodata";
+        s.className = "slot";
+
+        if (!o.slots) {
+            s.classList.add("nodata");
+        } else {
+            if (o.slots[i] === 1) {
+                s.classList.add("busy");
+            } else {
+                s.classList.add("free");
+            }
+        }
         g.appendChild(s);
     }
 
@@ -359,6 +757,8 @@ function renderEditorAxis() {
     editorInner.appendChild(label);
 }
 
+
+
 /***********************
  * PAN
  ***********************/
@@ -400,16 +800,6 @@ enableZoom(parkingCanvas, parkingInner, "parking");
 enablePan(editorCanvas, editorInner, "editor");
 enablePan(parkingCanvas, parkingInner, "parking");
 
-/***********************
- * MOCK MQTT
- ***********************/
-function mockMQTT() {
-    document.querySelectorAll(".slot").forEach(s => {
-        const r = Math.random();
-        s.className =
-            "slot " + (r < 0.4 ? "free" : r < 0.7 ? "busy" : "nodata");
-    });
-}
 
 /***********************
  * BLOCK RIGHT CLICK
@@ -420,4 +810,9 @@ document.addEventListener("contextmenu", e => e.preventDefault());
  * INIT
  ***********************/
 showSection("parking");
+showSection("parking");
+
+
+
+
 
